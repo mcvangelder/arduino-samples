@@ -1,2 +1,7 @@
-libraries/**
+libraries/third-party/**
 **.vscode**
+**.vs*
+**.vc*
+**__vm*
+**CppProperties*
+*.ignore
