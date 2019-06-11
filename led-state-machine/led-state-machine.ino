@@ -9,7 +9,7 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 
     StateData state2 = StateData(2);
-    
+
     StateData *state1Transitions[] = {&state2};
     StateData *state2Transitions[] = {&state1};
 
@@ -17,9 +17,12 @@ void setup()
     state2.setAllowedTransitions(state2Transitions, 1);
 
     StateData *allStates[] = {&state1, &state2};
-    delay(2000);
-
     machine = StateMachine(allStates, arrayLength(allStates), state1);
+    machine.setOnTransitionCallback(onTransition);
+    delay(1000);
+    pinMode(LED_BUILTIN, LOW);
+    delay(500);
+    pinMode(LED_BUILTIN, HIGH);
 }
 
 long transitionDelay = 1000;
@@ -34,27 +37,33 @@ void loop()
         int currentValue = machine.getCurrentStateValue();
         int nextValue = 0;
 
-        switch(currentValue)
-        {
-            case 1:
-                nextValue = 2; break;
-            case 2:
-                nextValue = 1; break;
-        }
-        
-        machine.transitionTo(nextValue);
-        currentValue = machine.getCurrentStateValue();
-
         switch (currentValue)
         {
         case 1:
-            digitalWrite(LED_BUILTIN, LOW);
+            nextValue = 2;
             break;
         case 2:
-            digitalWrite(LED_BUILTIN, HIGH);
-            break;
-        default:
+            nextValue = 1;
             break;
         }
+
+        machine.transitionTo(nextValue);
+    }
+}
+
+void onTransition(StateData *oldState, StateData *newState)
+{
+    auto currentValue = newState->getValue();
+
+    switch (currentValue)
+    {
+    case 1:
+        digitalWrite(LED_BUILTIN, LOW);
+        break;
+    case 2:
+        digitalWrite(LED_BUILTIN, HIGH);
+        break;
+    default:
+        break;
     }
 }
