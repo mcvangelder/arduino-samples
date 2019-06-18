@@ -30,14 +30,11 @@ void setup()
 {
     Serial.begin(9600);
 
-    setupLED();
-    setUpButton();
+    setupLED(&led);
+    setUpButton(&button);
     setUpStateMachine();
 
-    delay(1000);
-    pinMode(LED_BUILTIN, LOW);
-    delay(500);
-    pinMode(LED_BUILTIN, HIGH);
+    pinMode(LED_BUILTIN, OUTPUT);
     Serial.println("set up complete");
 }
 
@@ -48,7 +45,16 @@ bool isSystemOn;
 
 void loop()
 {
-    inspectButton(&button);
+    auto currentState = machine.getCurrentStateValue();
+    auto isToggled = isButtonToggled(&button);
+    if (isToggled && currentState == SYSTEM_OFF)
+    {
+        nextValue = LED_ON;
+    }
+    else if(!isToggled)
+    {
+        nextValue = SYSTEM_OFF;
+    }
 
     if (previousValue != nextValue)
     {
@@ -89,8 +95,8 @@ void setUpStateMachine()
     nextValue = SYSTEM_OFF;
     previousValue = LED_OFF;
     isSystemOn = false;
-    
-    machine = StateMachine(states, 3, ledOffState);
+
+    machine = StateMachine(states, 3, systemOffState);
     machine.setOnTransitionCallback(onStateChange);
 }
 
@@ -118,22 +124,22 @@ void off(LED led)
     digitalWrite(led.pin, LOW);
 }
 
-void setupLED()
+void setupLED(LED *led)
 {
-    led.pin = LED_BUILTIN;
-    led.output = LOW;
-    pinMode(led.pin, OUTPUT);
-    digitalWrite(led.pin, led.output);
+    led->pin = LED_BUILTIN;
+    led->output = LOW;
+    pinMode(led->pin, OUTPUT);
+    digitalWrite(led->pin, led->output);
 }
 
-void setUpButton()
+void setUpButton(BUTTON *button)
 {
-    button.pin = 4;
-    button.isToggled = false;
-    pinMode(button.pin, INPUT);
+    button->pin = 4;
+    button->isToggled = false;
+    pinMode(button->pin, INPUT);
 }
 
-void inspectButton(BUTTON *button)
+bool isButtonToggled(BUTTON *button)
 {
     auto read = digitalRead(button->pin);
     if (read != button->lastRead)
@@ -149,12 +155,11 @@ void inspectButton(BUTTON *button)
             button->currentState = read;
             // When the button is HIGH (pressed) preserve the previous value, when the
             // the button is LOW (released) then flip the toggle
-            button->isToggled = read == LOW ? !button->isToggled : button->isToggled;
             if (read == LOW)
             {
-                auto currentState = machine.getCurrentStateValue();
-                nextValue = currentState == SYSTEM_OFF ? LED_ON : SYSTEM_OFF;
+                button->isToggled = !button->isToggled;
             }
         }
     }
+    return button->isToggled;
 }
